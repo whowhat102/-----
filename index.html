@@ -88,6 +88,31 @@
     .trend-panel { margin-top: 40px; border-top: 1px solid var(--line); padding-top: 22px; }
     .trend-panel .section-heading { margin-bottom: 10px; }
     .trend-note { color: var(--muted); font-size: 11px; line-height: 1.8; margin: 0 0 18px; }
+    .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 25px; align-items: stretch; margin-bottom: 28px; }
+    .map-frame { min-width: 0; border: 1px solid var(--line); background: rgba(215,198,161,.025); }
+    .territory-map { display: block; width: 100%; height: auto; }
+    .map-water { fill: none; stroke: rgba(110,159,162,.42); stroke-width: 2; stroke-dasharray: 4 5; }
+    .map-river-label { fill: rgba(159,190,183,.8); font: 11px var(--serif); letter-spacing: 2px; }
+    .map-region { cursor: pointer; outline: none; }
+    .map-region path { stroke: rgba(233,224,202,.65); stroke-width: 1.5; vector-effect: non-scaling-stroke; transition: fill-opacity .18s, stroke .18s, stroke-width .18s; }
+    .map-region:hover path, .map-region:focus path { fill-opacity: .92; stroke: #f0dfb8; stroke-width: 2.5; }
+    .map-region.selected path { stroke: #fff0c7; stroke-width: 3; }
+    .map-region text { fill: #f2e8d1; font: 15px var(--serif); text-anchor: middle; pointer-events: none; paint-order: stroke; stroke: rgba(23,20,17,.75); stroke-width: 3px; stroke-linejoin: round; }
+    .map-region .small-label { font-size: 11px; }
+    .map-capital { fill: #f2e8d1; stroke: var(--vermilion); stroke-width: 3; pointer-events: none; }
+    .map-capital-label { fill: #f2e8d1; font: 11px var(--serif); pointer-events: none; paint-order: stroke; stroke: rgba(23,20,17,.9); stroke-width: 3px; }
+    .map-compass { fill: var(--gold); font: 12px var(--serif); text-anchor: middle; }
+    .map-detail { border-left: 1px solid var(--line); padding: 14px 0 14px 20px; display: flex; flex-direction: column; }
+    .map-detail-kicker { color: var(--gold); font-size: 10px; letter-spacing: .14em; }
+    .map-detail-title { margin: 7px 0 1px; color: var(--paper); font-family: var(--display); font-size: 30px; font-weight: 400; }
+    .map-detail-label { color: var(--muted); font-size: 11px; }
+    .map-detail-score { margin-top: 23px; display: flex; align-items: baseline; gap: 8px; }
+    .map-detail-score strong { font-family: var(--display); color: var(--paper); font-size: 42px; font-weight: 400; line-height: 1; }
+    .map-detail-score span { color: var(--muted); font-size: 11px; }
+    .map-detail-copy { color: #bdb39e; font-size: 12px; line-height: 1.9; margin: 12px 0 18px; }
+    .map-mini-trend { width: 100%; height: 45px; margin-top: auto; }
+    .map-mini-trend polyline { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; }
+    .map-caption { color: var(--dim); font-size: 10px; line-height: 1.6; margin: 8px 11px 10px; }
     .trend-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 24px; }
     .trend-item { min-width: 0; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 7px 12px; padding: 12px 0; border-top: 1px solid rgba(215,198,161,.1); }
     .trend-name { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
@@ -115,6 +140,13 @@
       .stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 22px; }
       .log { margin-top: 22px; }
       .trend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
+      .map-layout { grid-template-columns: 1fr; gap: 0; }
+      .map-detail { border-left: 0; border-top: 1px solid var(--line); padding: 15px 3px; display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 14px; }
+      .map-detail-kicker, .map-detail-title, .map-detail-label, .map-detail-copy { grid-column: 1; }
+      .map-detail-score { grid-column: 2; grid-row: 1 / span 3; margin: 0; }
+      .map-detail-score strong { font-size: 34px; }
+      .map-detail-copy { margin: 6px 0 0; }
+      .map-mini-trend { grid-column: 1 / -1; height: 36px; margin-top: 8px; }
     }
     @media (max-width: 520px) {
       .frame { padding: 0 17px 25px; }
@@ -170,6 +202,64 @@
     <section class="trend-panel" aria-labelledby="trendHeading">
       <div class="section-heading"><h2 id="trendHeading">列国与故地趋势</h2><span id="trendTurn">统一后的区域推演</span></div>
       <p class="trend-note">前221年统一后，韩、赵、魏、楚、燕、齐已不再是独立国家；此处追踪六国故地的民心与发展。匈奴为秦北方邻接势力，数值代表边境压力。趋势是基于施政选择的架空推演。</p>
+      <div class="map-layout">
+        <div class="map-frame">
+          <svg class="territory-map" viewBox="0 0 760 470" role="group" aria-labelledby="mapTitle mapDescription">
+            <title id="mapTitle">前221年前后区域版图示意</title>
+            <desc id="mapDescription">可选择秦廷、韩地、赵地、魏地、楚地、燕地、齐地或匈奴查看对应趋势。地形与疆界为示意。</desc>
+            <path d="M58 124 Q152 85 245 105 T438 93 Q532 75 643 126 L621 179 Q539 156 457 177 T286 169 Q174 188 77 165 Z" fill="#a887b5" fill-opacity=".2" stroke="#a887b5" stroke-opacity=".62" stroke-dasharray="7 6" />
+            <text x="367" y="113" class="map-river-label">北方边境 · 匈奴活动区域示意</text>
+            <path class="map-water" d="M105 202 C195 176 242 219 321 210 S447 166 546 195 S630 224 682 207" />
+            <text x="604" y="196" class="map-river-label">黄河</text>
+            <path class="map-water" d="M235 348 C310 319 375 353 438 341 S543 332 632 358" />
+            <text x="565" y="379" class="map-river-label">长江</text>
+            <g class="map-region" data-region="秦廷" role="button" tabindex="0" aria-label="选择秦廷" aria-pressed="false">
+              <path d="M86 184 L146 151 L210 161 L251 197 L241 251 L214 278 L187 323 L128 308 L103 267 L76 225 Z" fill="#c59c5b" fill-opacity=".63" />
+              <text x="158" y="239">秦</text>
+            </g>
+            <g class="map-region" data-region="赵地" role="button" tabindex="0" aria-label="选择赵地" aria-pressed="false">
+              <path d="M239 157 L315 143 L365 159 L375 196 L333 222 L266 218 L244 194 Z" fill="#83a38d" fill-opacity=".58" />
+              <text x="309" y="185">赵</text>
+            </g>
+            <g class="map-region" data-region="燕地" role="button" tabindex="0" aria-label="选择燕地" aria-pressed="false">
+              <path d="M370 139 L454 125 L534 146 L574 178 L545 209 L464 200 L377 190 L365 161 Z" fill="#6e9fa2" fill-opacity=".58" />
+              <text x="477" y="166">燕</text>
+            </g>
+            <g class="map-region" data-region="魏地" role="button" tabindex="0" aria-label="选择魏地" aria-pressed="false">
+              <path d="M245 222 L294 219 L321 244 L308 279 L268 289 L239 264 Z" fill="#c99059" fill-opacity=".63" />
+              <text x="276" y="258">魏</text>
+            </g>
+            <g class="map-region" data-region="韩地" role="button" tabindex="0" aria-label="选择韩地" aria-pressed="false">
+              <path d="M320 221 L359 211 L384 237 L372 270 L340 282 L309 268 L313 243 Z" fill="#bd4932" fill-opacity=".62" />
+              <text x="344" y="248">韩</text>
+            </g>
+            <g class="map-region" data-region="齐地" role="button" tabindex="0" aria-label="选择齐地" aria-pressed="false">
+              <path d="M381 201 L456 204 L501 228 L489 266 L443 277 L388 265 L374 237 Z" fill="#c47e86" fill-opacity=".62" />
+              <text x="440" y="241">齐</text>
+            </g>
+            <g class="map-region" data-region="楚地" role="button" tabindex="0" aria-label="选择楚地" aria-pressed="false">
+              <path d="M269 291 L315 280 L367 274 L422 282 L464 306 L459 344 L417 376 L350 366 L300 347 L259 321 Z" fill="#94a95f" fill-opacity=".59" />
+              <text x="367" y="327">楚</text>
+            </g>
+            <g class="map-region" data-region="匈奴" role="button" tabindex="0" aria-label="选择匈奴边境压力" aria-pressed="false">
+              <path d="M83 125 Q168 89 248 112 T409 100 Q508 87 596 126 L575 145 L500 135 L419 150 L334 135 L260 151 L176 143 L103 163 Z" fill="#a887b5" fill-opacity=".2" stroke="#a887b5" stroke-opacity=".75" stroke-dasharray="6 5" />
+              <text x="369" y="128" class="small-label">匈奴</text>
+            </g>
+            <circle class="map-capital" cx="168" cy="215" r="5" />
+            <text class="map-capital-label" x="179" y="216">咸阳</text>
+            <text class="map-compass" x="710" y="65">北 ↑</text>
+          </svg>
+          <p class="map-caption">疆界、地形与相对位置为玩法示意；统一后的六国故地已纳入秦郡县治理。</p>
+        </div>
+        <aside class="map-detail" id="mapDetail" aria-live="polite">
+          <span class="map-detail-kicker">区域档案 · 当前选中</span>
+          <h3 class="map-detail-title" id="mapRegionName">秦廷</h3>
+          <span class="map-detail-label" id="mapRegionLabel">核心发展</span>
+          <div class="map-detail-score"><strong id="mapRegionValue">72</strong><span>趋势值</span></div>
+          <p class="map-detail-copy" id="mapRegionCopy">关中核心区域，国库、道路与中枢稳定会共同影响其发展。</p>
+          <svg class="map-mini-trend" id="mapMiniTrend" viewBox="0 0 180 45" role="img" aria-label="所选区域趋势图"><polyline points="0,22 180,22" stroke="#c59c5b"></polyline></svg>
+        </aside>
+      </div>
       <div class="trend-grid" id="trends" aria-label="列国与地区发展趋势"></div>
     </section>
     <footer class="footer"><span>史实为骨，推演为戏。不同选择将通往不同结局。</span><span>咸阳 · 秦始皇二十六年</span></footer>
@@ -183,6 +273,7 @@
       stats: { stability: 58, treasury: 62, people: 45, authority: 70, military: 56, infrastructure: 42, unity: 48, unrest: 32 },
       log: [],
       pendingIncident: null,
+      selectedRegion: "秦廷",
       regions: [
         { name: "秦廷", label: "核心发展", kind: "core", value: 72, bias: 0.2, color: "#c59c5b", history: [72] },
         { name: "韩地", label: "故地民心", kind: "former", value: 39, bias: -0.25, color: "#bd4932", history: [39] },
@@ -317,6 +408,7 @@
             ...structuredClone(initialState),
             ...saved,
             stats: { ...initialState.stats, ...saved.stats },
+            selectedRegion: saved.selectedRegion || initialState.selectedRegion,
             regions: Array.isArray(saved.regions) ? saved.regions : structuredClone(initialState.regions),
             pendingIncident: saved.pendingIncident || null
           };
@@ -371,6 +463,54 @@
       document.getElementById("trendTurn").textContent = `已推演 ${state.turn} / ${events.length} 年`;
     }
 
+    function renderMap() {
+      const selected = state.regions.find((region) => region.name === state.selectedRegion) || state.regions[0];
+      if (!selected) return;
+      document.querySelectorAll(".map-region").forEach((shape) => {
+        const isSelected = shape.dataset.region === selected.name;
+        shape.classList.toggle("selected", isSelected);
+        shape.setAttribute("aria-pressed", String(isSelected));
+      });
+      document.getElementById("mapRegionName").textContent = selected.name;
+      document.getElementById("mapRegionLabel").textContent = selected.label;
+      document.getElementById("mapRegionValue").textContent = Math.round(selected.value);
+      const descriptions = {
+        秦廷: "关中核心区域，国库、道路与中枢稳定会共同影响其发展。",
+        韩地: "六国故地之一；归附与民生改善有助于缓和新并之地的不安。",
+        赵地: "北方故地；边防调度与地方安定会影响其发展趋势。",
+        魏地: "中原故地；交通建设与徭役负担共同作用于地方恢复。",
+        楚地: "南方故地；民生、道路与治理整合影响其长期走势。",
+        燕地: "东北故地；朝廷控制力与地方归附程度决定其趋势。",
+        齐地: "东方故地；较稳定的民生有助于融入统一秩序。",
+        匈奴: "北方邻接势力；此值表示边境压力，军备与内地动荡会影响走势。"
+      };
+      document.getElementById("mapRegionCopy").textContent = descriptions[selected.name] || "该地区的发展将随施政选择变化。";
+      const values = selected.history.slice(-12);
+      const low = Math.min(...values);
+      const spread = Math.max(Math.max(...values) - low, 4);
+      const points = values.map((value, index) => {
+        const x = values.length === 1 ? 180 : index / (values.length - 1) * 180;
+        const y = 40 - (value - low + spread * 0.08) / (spread * 1.16) * 35;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(" ");
+      document.querySelector("#mapMiniTrend polyline").setAttribute("points", points);
+      document.querySelector("#mapMiniTrend polyline").setAttribute("stroke", selected.color);
+    }
+
+    document.querySelectorAll(".map-region").forEach((shape) => {
+      shape.addEventListener("click", () => {
+        state.selectedRegion = shape.dataset.region;
+        renderMap();
+        saveState();
+      });
+      shape.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          shape.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        }
+      });
+    });
+
     function advanceTrends() {
       const { stability, treasury, people, authority, infrastructure, unity, military, unrest } = state.stats;
       for (const region of state.regions) {
@@ -420,6 +560,7 @@
       document.getElementById("historyRecord").innerHTML = `<strong>${incident ? "史实记载" : "史实札记"}</strong>　${current.record}`;
       document.getElementById("progressFill").style.width = `${Math.min(state.turn / events.length, 1) * 100}%`;
       renderStats();
+      renderMap();
       renderTrends();
       renderLog();
       choicesElement.innerHTML = "";
