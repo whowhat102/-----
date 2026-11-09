@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#171411">
+  <title>大秦：天下初定</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #e9e0ca;
+      --muted: #9c9483;
+      --dim: #625c50;
+      --paper: #d7c6a1;
+      --vermilion: #bd4932;
+      --gold: #c59c5b;
+      --jade: #83a38d;
+      --line: rgba(215, 198, 161, .17);
+      --serif: "Noto Serif SC", "Songti SC", serif;
+      --display: "Ma Shan Zheng", "KaiTi", serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: #171411;
+      font-family: var(--serif);
+      background-image: radial-gradient(ellipse at 74% 9%, rgba(122, 64, 34, .18), transparent 38%),
+        linear-gradient(90deg, transparent 49.9%, rgba(215, 198, 161, .025) 50%, transparent 50.1%);
+    }
+    button { font: inherit; }
+    .frame { width: min(1320px, 100%); margin: 0 auto; padding: 0 42px 44px; }
+    .topbar { height: 66px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 12px; color: var(--paper); letter-spacing: .16em; font-size: 12px; }
+    .brand-mark { width: 25px; height: 25px; display: grid; place-items: center; border: 1px solid var(--vermilion); color: var(--vermilion); font-family: var(--display); font-size: 17px; }
+    .top-actions { display: flex; gap: 20px; align-items: center; }
+    .save-state { color: var(--muted); font-size: 11px; }
+    .text-button { color: var(--muted); background: transparent; border: 0; cursor: pointer; font-size: 12px; padding: 8px 0; }
+    .text-button:hover { color: var(--ink); }
+    .masthead { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 44px; padding: 42px 0 25px; align-items: end; }
+    .eyebrow { color: var(--gold); font-size: 11px; letter-spacing: .25em; }
+    h1 { margin: 12px 0 8px; font-family: var(--display); font-size: clamp(42px, 6vw, 72px); font-weight: 400; line-height: 1; letter-spacing: .06em; }
+    .subtitle { color: var(--muted); font-size: 13px; letter-spacing: .08em; }
+    .year-block { text-align: right; border-left: 1px solid var(--line); padding-left: 23px; }
+    .year-label { color: var(--muted); font-size: 11px; letter-spacing: .12em; }
+    .year { color: var(--paper); font-family: var(--display); font-size: 35px; margin-top: 2px; }
+    .year span { font-size: 14px; color: var(--muted); font-family: var(--serif); }
+    .progress-track { height: 2px; background: rgba(215,198,161,.12); margin: 0 0 29px; }
+    .progress-fill { width: 0; height: 100%; background: var(--vermilion); transition: width .4s ease; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 286px; gap: 52px; align-items: start; }
+    .section-heading { display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1px solid var(--line); padding-bottom: 13px; margin-bottom: 20px; }
+    .section-heading h2 { font-size: 15px; font-weight: 500; margin: 0; letter-spacing: .08em; }
+    .section-heading span { font-size: 11px; color: var(--muted); }
+    .event-kicker { color: var(--vermilion); letter-spacing: .22em; font-size: 11px; margin: 27px 0 10px; }
+    .event-title { font-family: var(--display); font-size: clamp(27px, 3.2vw, 38px); font-weight: 400; margin: 0 0 12px; }
+    .event-copy { color: #bdb39e; font-size: 14px; line-height: 2; max-width: 700px; margin: 0; }
+    .record { margin-top: 20px; padding: 11px 14px; border-left: 2px solid rgba(197,156,91,.56); background: rgba(197,156,91,.055); color: #a99f8b; font-size: 11px; line-height: 1.8; }
+    .record strong { color: var(--gold); font-weight: 500; }
+    .choices { margin-top: 25px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .choice {
+      position: relative; text-align: left; min-height: 136px; padding: 16px 15px 14px; color: var(--ink);
+      background: linear-gradient(145deg, rgba(215,198,161,.065), rgba(215,198,161,.018));
+      border: 1px solid var(--line); cursor: pointer; transition: border-color .2s, background .2s, transform .2s;
+    }
+    .choice:hover { border-color: rgba(197,156,91,.65); background: rgba(197,156,91,.08); transform: translateY(-2px); }
+    .choice:disabled { cursor: default; opacity: .58; transform: none; }
+    .choice-no { color: var(--vermilion); font-family: var(--display); font-size: 19px; }
+    .choice-title { display: block; font-size: 14px; margin: 6px 0; }
+    .choice-desc { color: var(--muted); font-size: 11px; line-height: 1.7; display: block; }
+    .side { border-left: 1px solid var(--line); padding-left: 23px; }
+    .side .section-heading { margin-bottom: 14px; }
+    .stat { margin: 0 0 17px; }
+    .stat-line { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px; }
+    .stat-name { font-size: 12px; color: #c9c0ad; }
+    .stat-value { color: var(--paper); font-size: 13px; font-variant-numeric: tabular-nums; }
+    .stat-track { height: 3px; background: rgba(215,198,161,.12); }
+    .stat-fill { height: 100%; width: 0; transition: width .35s ease; background: var(--gold); }
+    .stat:nth-of-type(3) .stat-fill { background: var(--jade); }
+    .stat:nth-of-type(4) .stat-fill { background: var(--vermilion); }
+    .log { margin-top: 30px; }
+    .log-list { list-style: none; margin: 0; padding: 0; }
+    .log-item { display: grid; grid-template-columns: 39px 1fr; gap: 8px; border-bottom: 1px solid rgba(215,198,161,.09); padding: 9px 0; font-size: 11px; line-height: 1.7; color: var(--muted); }
+    .log-year { color: var(--gold); }
+    .empty-log { color: var(--dim); font-size: 11px; line-height: 1.8; }
+    .footer { margin-top: 36px; border-top: 1px solid var(--line); padding-top: 14px; display: flex; justify-content: space-between; color: var(--dim); font-size: 10px; }
+    .ending { display: none; border-top: 1px solid var(--line); margin-top: 27px; padding-top: 20px; }
+    .ending h3 { margin: 0 0 8px; font-family: var(--display); font-size: 29px; font-weight: 400; }
+    .ending p { color: var(--muted); font-size: 13px; line-height: 1.9; margin: 0 0 14px; }
+    .restart { padding: 9px 15px; background: var(--vermilion); color: #fff1dc; border: 0; cursor: pointer; font-size: 12px; }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translate(-50%, 10px); opacity: 0; pointer-events: none; padding: 10px 15px; background: #2a251e; border: 1px solid var(--line); color: var(--paper); font-size: 12px; transition: .2s; }
+    .toast.show { transform: translate(-50%, 0); opacity: 1; }
+    @media (max-width: 800px) {
+      .frame { padding: 0 22px 30px; }
+      .masthead { grid-template-columns: 1fr auto; gap: 14px; padding-top: 34px; }
+      .layout { grid-template-columns: 1fr; gap: 32px; }
+      .side { border-left: 0; border-top: 1px solid var(--line); padding: 22px 0 0; }
+      .stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 22px; }
+      .log { margin-top: 22px; }
+    }
+    @media (max-width: 520px) {
+      .frame { padding: 0 17px 25px; }
+      .brand { letter-spacing: .08em; }
+      .top-actions { gap: 12px; }
+      .save-state { display: none; }
+      .masthead { padding-top: 28px; }
+      h1 { font-size: 46px; }
+      .year-block { padding-left: 12px; }
+      .year { font-size: 29px; }
+      .choices { grid-template-columns: 1fr; gap: 8px; }
+      .choice { min-height: 0; padding: 12px 14px; }
+      .choice-title { display: inline; margin: 0 8px 0 4px; }
+      .choice-desc { margin: 4px 0 0 28px; }
+      .footer { gap: 14px; line-height: 1.6; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">秦</span><span>大秦 · 天下初定</span></div>
+      <div class="top-actions"><span class="save-state" id="saveState">本地存档已启用</span><button class="text-button" id="resetButton" type="button" title="重新开始">重开此局</button></div>
+    </header>
+    <section class="masthead" aria-labelledby="gameTitle">
+      <div><div class="eyebrow">始皇帝纪 · 第一卷</div><h1 id="gameTitle">天下初定</h1><div class="subtitle">六王既灭，四海归一。帝国将走向何处？</div></div>
+      <div class="year-block"><div class="year-label">纪年 · 回合 <span id="turnLabel">01 / 12</span></div><div class="year"><span id="yearNumber">前221</span> <span>年</span></div></div>
+    </section>
+    <div class="progress-track" aria-label="游戏进度"><div class="progress-fill" id="progressFill"></div></div>
+    <main class="layout">
+      <section class="chronicle" aria-labelledby="eventTitle">
+        <div class="section-heading"><h2>朝议 · 今日政务</h2><span id="eventIndex">诏令 01</span></div>
+        <div class="event-kicker" id="eventEra">统一之初</div>
+        <h2 class="event-title" id="eventTitle">帝号既立</h2>
+        <p class="event-copy" id="eventCopy"></p>
+        <div class="record" id="historyRecord"></div>
+        <div class="choices" id="choices" aria-label="选择施政方略"></div>
+        <div class="ending" id="ending" aria-live="polite"></div>
+      </section>
+      <aside class="side" aria-label="帝国状态">
+        <div class="section-heading"><h2>帝国气象</h2><span>国势</span></div>
+        <div class="stats-grid" id="stats"></div>
+        <section class="log" aria-label="施政记录">
+          <div class="section-heading"><h2>起居注</h2><span id="logCount">0 条</span></div>
+          <ul class="log-list" id="logList"><li class="empty-log">尚无决策。<br>你的每一道诏令，都会留下回响。</li></ul>
+        </section>
+      </aside>
+    </main>
+    <footer class="footer"><span>史实为骨，推演为戏。不同选择将通往不同结局。</span><span>咸阳 · 秦始皇二十六年</span></footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    "use strict";
+
+    const initialState = {
+      turn: 0,
+      stats: { stability: 58, treasury: 62, people: 45, authority: 70 },
+      log: [],
+      ended: false
+    };
+
+    const statInfo = [
+      { key: "stability", label: "天下安定", color: "#c59c5b" },
+      { key: "treasury", label: "国库储备", color: "#83a38d" },
+      { key: "people", label: "民生休养", color: "#bd4932" },
+      { key: "authority", label: "皇权威望", color: "#c59c5b" }
+    ];
+
+    const events = [
+      { year: 221, era: "统一之初", title: "帝号既立", text: "六国既灭，群臣议尊号。有人主张沿用王号以安天下，也有人认为新帝国需要一个前所未有的名号与秩序。你将如何昭示天下？", record: "公元前221年，秦王政完成统一，自称<strong>始皇帝</strong>，并推行一系列中央集权制度。", choices: [
+        { title: "定皇帝之号", desc: "建立新朝仪，昭告天下一统。", effects: { authority: 9, stability: 3, treasury: -3 }, result: "皇帝之号传遍天下，百官称贺；新秩序也需要持续投入。" },
+        { title: "先抚六国旧地", desc: "减轻新附之地负担，安其人心。", effects: { people: 9, stability: 5, treasury: -6 }, result: "旧地百姓稍得喘息，帝国初年的钱粮则更为紧张。" },
+        { title: "严明法令", desc: "以秦法为准，迅速统一政令。", effects: { authority: 6, stability: 7, people: -5 }, result: "政令传达更快，地方对严法的畏惧也在增长。" }
+      ]},
+      { year: 220, era: "制度初成", title: "郡县与封建", text: "廷议如何治理广大的新帝国。有人请封宗室功臣为王，以镇守远方；也有人主张由朝廷直接任免地方官吏。", record: "秦统一后推行<strong>郡县制</strong>，地方长官由中央任免。", choices: [
+        { title: "推行郡县", desc: "官吏由中央任免，政令直达郡县。", effects: { stability: 8, authority: 7, treasury: -4 }, result: "中央得以掌握地方官吏任免，治理网络逐步铺开。" },
+        { title: "分封宗室", desc: "以宗亲镇守要地，减少朝廷远控。", effects: { stability: -5, authority: -4, treasury: 3 }, result: "短期治理负担减轻，地方势力却开始拥有自己的根基。" },
+        { title: "郡县为主，留观察期", desc: "先派官治理要地，再按成效调整。", effects: { stability: 4, people: 3, treasury: -2 }, result: "制度推进较缓，却给新附之地留下了适应的时间。" }
+      ]},
+      { year: 219, era: "车同轨", title: "驰道与民力", text: "关中与东方之间道路不一，军情、粮运和商旅都受阻。修筑驰道可以让命令与物资更快抵达，但征发徭役会让百姓离开田亩。", record: "秦修筑以咸阳为中心的<strong>驰道</strong>，便利交通与政令传递。", choices: [
+        { title: "大修驰道", desc: "集中民力修路，尽快连通帝国。", effects: { stability: 7, treasury: -7, people: -7 }, result: "道路渐通，调兵运粮更快；许多家庭却少了劳作的人手。" },
+        { title: "分段缓修", desc: "优先修补粮道，控制征发规模。", effects: { stability: 4, treasury: -3, people: -2 }, result: "交通逐步改善，工程没有压垮沿途的农时。" },
+        { title: "暂缓工程", desc: "将民力留给耕作，等待国库宽裕。", effects: { people: 5, treasury: 3, stability: -4 }, result: "百姓得以安心耕作，但边地与郡县仍觉朝廷遥远。" }
+      ]},
+      { year: 218, era: "书同文", title: "文字归一", text: "旧六国文书各有差异，官府文书往来常生误解。丞相建议颁行统一书体，博士们担忧地方典籍与习惯会被一扫而空。", record: "秦以<strong>小篆</strong>统一官方文字，推动政令与文书标准化。", choices: [
+        { title: "颁行小篆", desc: "统一官方文书与刻石文字。", effects: { authority: 7, stability: 6, treasury: -2 }, result: "文书格式渐趋一致，吏员需要一段时间熟悉新字。" },
+        { title: "官文统一，民间兼容", desc: "官府用小篆，民间书写暂从旧俗。", effects: { stability: 3, people: 4, authority: 2 }, result: "政务沟通更清晰，地方书写习惯也得以保留。" },
+        { title: "留各地旧文", desc: "允许地方暂用旧字，减少制度冲击。", effects: { people: 3, stability: -4, authority: -3 }, result: "地方士民较易接受，但中央文书仍难以完全互通。" }
+      ]},
+      { year: 217, era: "衡量天下", title: "度量衡制", text: "各地尺、斗、斤两不一，税赋和交易难以核算。统一标准有利于治理，却也会打破旧有交易习惯。", record: "秦统一<strong>度量衡</strong>，使征收、工程与交易有了共同标准。", choices: [
+        { title: "颁标准器", desc: "郡县依新制校验秤、斗与尺。", effects: { stability: 6, treasury: 5, authority: 4 }, result: "征收与交易更容易核对，官府账目也逐渐清晰。" },
+        { title: "新旧并行一年", desc: "设过渡期，逐步更换器具。", effects: { people: 4, stability: 2, treasury: -2 }, result: "变法较为平缓，国库短期内要承担校制成本。" },
+        { title: "严查私秤", desc: "重罚不合标准者，迅速肃清乱象。", effects: { treasury: 8, authority: 5, people: -7 }, result: "赋税核算增长迅速，民间对官府的畏惧随之加深。" }
+      ]},
+      { year: 216, era: "钱行天下", title: "半两钱", text: "统一后的市场仍流通各国旧币，商旅换算困难。统一货币能打通贸易，但强行收缴旧币也可能扰乱民间生计。", record: "秦推行以<strong>半两钱</strong>为代表的统一货币制度。", choices: [
+        { title: "统一发行半两钱", desc: "以新币规范跨郡交易与赋税。", effects: { treasury: 7, stability: 5, people: -3 }, result: "跨地交易更加方便，旧币退出也带来了短暂的不便。" },
+        { title: "限期兑换旧币", desc: "给商民时间换币，逐步收拢旧制。", effects: { people: 4, treasury: 3, stability: 2 }, result: "换币过程较为平稳，钱制统一稍慢一步。" },
+        { title: "保留旧币流通", desc: "暂不强制换币，优先保住交易活力。", effects: { people: 5, stability: -4, authority: -2 }, result: "市场暂时免受冲击，各地货币仍未真正归一。" }
+      ]},
+      { year: 215, era: "北顾边塞", title: "北境烽烟", text: "北方边郡频有警报。将领请大举出兵并连接旧有城塞，朝中也有人提醒，漫长边防将耗费粮草与民力。", record: "秦曾遣军经营北方边地，并修缮、连接部分既有防御工事。", choices: [
+        { title: "出兵并修边塞", desc: "加强北境防御，保障新附郡县。", effects: { stability: 8, treasury: -8, people: -6 }, result: "边地防守加强，军需与修筑让国库和民力都付出代价。" },
+        { title: "据险守备", desc: "整顿关塞与烽燧，避免深入作战。", effects: { stability: 4, treasury: -3, authority: 2 }, result: "边防更有章法，帝国暂避了一场昂贵的远征。" },
+        { title: "减少边军", desc: "将粮草与人力优先用于农桑。", effects: { people: 5, treasury: 4, stability: -7 }, result: "内地负担稍减，边境警讯却变得更加频繁。" }
+      ]},
+      { year: 214, era: "南方新境", title: "岭南之议", text: "南方百越之地尚未完全归附。将领主张继续进军，地方官则认为水土不服、道路难行，应先经营粮道与郡县。", record: "秦军曾经营岭南，开凿<strong>灵渠</strong>以沟通湘水与漓水流域的水运。", choices: [
+        { title: "经营岭南", desc: "开辟粮道，设置郡县并安置军民。", effects: { stability: 6, treasury: -7, people: -3 }, result: "南方治理向前一步，粮道与安置仍需要长期投入。" },
+        { title: "先通水道", desc: "以工程连接水系，稳步推进南下。", effects: { treasury: -5, stability: 4, people: 2 }, result: "水运改善为后续经营铺路，进展虽不快却较稳妥。" },
+        { title: "暂守既有边界", desc: "停止推进，避免更大规模征发。", effects: { people: 5, treasury: 3, stability: -5 }, result: "百姓暂免远行之苦，南方边界仍有冲突风险。" }
+      ]},
+      { year: 213, era: "博士议政", title: "古今之争", text: "博士淳于越以古制进谏，丞相李斯反对以古非今。争论牵涉典籍、言论与新制度的根基：你要如何处置？", record: "公元前213年前后，秦廷发生关于典籍与制度的争论，史籍记载了严厉的<strong>焚书措施</strong>。", choices: [
+        { title: "择书保存，许议新政", desc: "保留典籍副本，鼓励就事论政。", effects: { authority: -2, stability: 3, people: 5 }, result: "朝议仍有不同声音，制度也因此多了一面镜子。" },
+        { title: "限定官学典籍", desc: "保留官藏与实用之书，约束私议。", effects: { authority: 5, stability: 1, people: -3 }, result: "朝廷更易统一说法，士人间的忧惧也悄然加深。" },
+        { title: "严禁私藏非秦史书", desc: "以严令压下争论，维护政令权威。", effects: { authority: 8, stability: -2, people: -8 }, result: "反对之声一时沉寂，许多人的不满则转入暗处。" }
+      ]},
+      { year: 212, era: "巡行天下", title: "刻石与巡狩", text: "新帝国需要被看见。群臣请陛下巡行郡县、刻石颂功；然而车驾所至，沿途供奉与役使也会落在百姓肩上。", record: "秦始皇多次巡行，沿途刻石以记功业、宣示政令。", choices: [
+        { title: "大巡天下", desc: "亲至郡县，刻石宣示帝国秩序。", effects: { authority: 8, treasury: -6, people: -4 }, result: "天子威仪远播，沿途郡县也承担了不小的供给压力。" },
+        { title: "巡行重点郡县", desc: "轻车简从，听取地方官民实情。", effects: { stability: 5, authority: 4, people: 2 }, result: "朝廷更了解地方状况，也避免了铺张巡行。" },
+        { title: "遣使代巡", desc: "派御史核察地方，不亲自出行。", effects: { treasury: 3, people: 3, authority: -3 }, result: "节省了巡行开支，天子与远方郡县之间却更显遥远。" }
+      ]},
+      { year: 211, era: "宫阙与民力", title: "阿房之议", text: "宫室与陵寝工程接连提出，工匠称规模可彰显帝国气象，地方官却报告徭役已经影响农时。你会如何裁度？", record: "秦始皇陵自其即位后营建；阿房宫工程的规模与完成情况，后世文献说法不一。", choices: [
+        { title: "继续大兴土木", desc: "展现帝国威仪，营建宫室与陵寝。", effects: { authority: 6, treasury: -8, people: -9 }, result: "宫阙工程显出帝国声势，劳役带来的怨言也在累积。" },
+        { title: "限定工期与役额", desc: "保留核心工程，按农时调度民夫。", effects: { stability: 4, treasury: -3, people: 4 }, result: "工程放慢了脚步，百姓与土地得到更多喘息。" },
+        { title: "暂停非急工程", desc: "将资源转向仓储、水利与赈济。", effects: { people: 8, treasury: 2, authority: -4 }, result: "民生得到实在照拂，宏大的营建计划则暂时搁置。" }
+      ]},
+      { year: 210, era: "最后一次东巡", title: "沙丘遗诏", text: "东巡途中，陛下病势渐重。身后之事与帝国继承都已迫在眉睫。你最后一道政令，将决定留下怎样的秩序。", record: "公元前210年，秦始皇在巡行途中去世。此后帝国很快陷入继承与政治危机。", choices: [
+        { title: "明定继承，宽缓新政", desc: "公开安排继承，并赦减部分徭役。", effects: { stability: 8, people: 8, authority: -2 }, result: "继承安排昭告天下，宽缓之令让远方郡县看见转机。" },
+        { title: "严守既定法令", desc: "维持既有秩序，要求群臣奉法。", effects: { authority: 6, stability: 2, people: -4 }, result: "法令依旧清晰，帝国却少了调整方向的余地。" },
+        { title: "加急召回重臣", desc: "令中枢重臣回朝，共议继承与安民。", effects: { stability: 5, treasury: -2, people: 2 }, result: "朝廷争取到协商时间，天下静候咸阳的下一道诏令。" }
+      ]}
+    ];
+
+    const storageKey = "daqin-role-sim-v1";
+    let state = loadState();
+    const statsElement = document.getElementById("stats");
+    const choicesElement = document.getElementById("choices");
+    const toastElement = document.getElementById("toast");
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey));
+        if (saved && saved.stats && Number.isInteger(saved.turn)) return saved;
+      } catch (error) {
+        console.warn("无法读取本地存档。", error);
+      }
+      return structuredClone(initialState);
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(state));
+        document.getElementById("saveState").textContent = "本地存档已更新";
+      } catch (error) {
+        document.getElementById("saveState").textContent = "存档不可用";
+        console.warn("无法写入本地存档。", error);
+      }
+    }
+
+    function renderStats() {
+      statsElement.innerHTML = "";
+      for (const stat of statInfo) {
+        const value = state.stats[stat.key];
+        const row = document.createElement("div");
+        row.className = "stat";
+        row.innerHTML = `<div class="stat-line"><span class="stat-name">${stat.label}</span><span class="stat-value">${value}</span></div><div class="stat-track"><div class="stat-fill" style="width:${value}%;background:${stat.color}"></div></div>`;
+        statsElement.append(row);
+      }
+    }
+
+    function renderLog() {
+      const list = document.getElementById("logList");
+      document.getElementById("logCount").textContent = `${state.log.length} 条`;
+      if (!state.log.length) {
+        list.innerHTML = '<li class="empty-log">尚无决策。<br>你的每一道诏令，都会留下回响。</li>';
+        return;
+      }
+      list.innerHTML = state.log.slice().reverse().slice(0, 6).map((entry) =>
+        `<li class="log-item"><span class="log-year">前${entry.year}</span><span>${entry.title}：${entry.choice}</span></li>`
+      ).join("");
+    }
+
+    function showToast(message) {
+      toastElement.textContent = message;
+      toastElement.classList.add("show");
+      window.setTimeout(() => toastElement.classList.remove("show"), 2200);
+    }
+
+    function render() {
+      const finished = state.turn >= events.length;
+      const event = events[Math.min(state.turn, events.length - 1)];
+      document.getElementById("turnLabel").textContent = `${String(Math.min(state.turn + 1, events.length)).padStart(2, "0")} / ${events.length}`;
+      document.getElementById("yearNumber").textContent = `前${event.year}`;
+      document.getElementById("eventIndex").textContent = `诏令 ${String(Math.min(state.turn + 1, events.length)).padStart(2, "0")}`;
+      document.getElementById("eventEra").textContent = event.era;
+      document.getElementById("eventTitle").textContent = event.title;
+      document.getElementById("eventCopy").textContent = event.text;
+      document.getElementById("historyRecord").innerHTML = `<strong>史实札记</strong>　${event.record}`;
+      document.getElementById("progressFill").style.width = `${Math.min(state.turn / events.length, 1) * 100}%`;
+      renderStats();
+      renderLog();
+      choicesElement.innerHTML = "";
+      document.getElementById("ending").style.display = "none";
+
+      if (finished || state.ended) {
+        state.ended = true;
+        document.getElementById("progressFill").style.width = "100%";
+        choicesElement.hidden = true;
+        showEnding();
+        saveState();
+        return;
+      }
+
+      choicesElement.hidden = false;
+      event.choices.forEach((choice, index) => {
+        const button = document.createElement("button");
+        button.className = "choice";
+        button.type = "button";
+        button.innerHTML = `<span class="choice-no">${String(index + 1).padStart(2, "0")}</span><span class="choice-title">${choice.title}</span><span class="choice-desc">${choice.desc}</span>`;
+        button.addEventListener("click", () => makeChoice(choice));
+        choicesElement.append(button);
+      });
+      saveState();
+    }
+
+    function makeChoice(choice) {
+      if (state.ended) return;
+      const event = events[state.turn];
+      for (const [key, delta] of Object.entries(choice.effects)) {
+        state.stats[key] = Math.max(0, Math.min(100, state.stats[key] + delta));
+      }
+      state.log.push({ year: event.year, title: event.title, choice: choice.title, result: choice.result });
+      state.turn += 1;
+      showToast(choice.result);
+      render();
+    }
+
+    function showEnding() {
+      const ending = document.getElementById("ending");
+      const average = Object.values(state.stats).reduce((sum, value) => sum + value, 0) / 4;
+      let title = "帝國初定，餘緒未絕";
+      let text = "十二道诏令已落定。秦的制度与道路为后世留下深远影响，而急速扩张与严苛治理所积累的矛盾，也在始皇帝身后迅速浮现。";
+      if (state.stats.people >= 65 && state.stats.stability >= 60) {
+        title = "休养生息，天下渐安";
+        text = "你在统一与安民之间找到了一条艰难的路。郡县、文字与制度继续运行，百姓也得到喘息。后世仍将讨论：若宽缓能再早一些，帝国的命运是否会不同？";
+      } else if (state.stats.authority >= 75 && state.stats.stability >= 55) {
+        title = "法令如一，威加海内";
+        text = "帝国政令通行，中央威权深入郡县。只是天下归一不等于人心归一，严密的秩序需要不断的力量维系。";
+      } else if (state.stats.people < 30 || state.stats.stability < 30) {
+        title = "徭役渐重，暗流已生";
+        text = "统一工程与严法消耗了太多民力，边地与旧国之人仍未安定。制度建立得很快，信任却来得很慢。始皇帝身后，潜伏的裂痕将一一显露。";
+      }
+      ending.innerHTML = `<h3>${title}</h3><p>${text}</p><p>最终国势：安定 ${state.stats.stability} · 国库 ${state.stats.treasury} · 民生 ${state.stats.people} · 威望 ${state.stats.authority}</p><button class="restart" type="button" id="endingRestart">重新推演</button>`;
+      ending.style.display = "block";
+      document.getElementById("endingRestart").addEventListener("click", resetGame);
+    }
+
+    function resetGame() {
+      state = structuredClone(initialState);
+      saveState();
+      render();
+      showToast("新的推演开始了");
+    }
+
+    document.getElementById("resetButton").addEventListener("click", () => {
+      if (window.confirm("要结束当前推演并从前221年重新开始吗？")) resetGame();
+    });
+
+    render();
+  </script>
+</body>
+</html>
