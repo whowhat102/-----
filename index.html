@@ -91,8 +91,12 @@
     .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 25px; align-items: stretch; margin-bottom: 28px; }
     .map-frame { min-width: 0; border: 1px solid var(--line); background: rgba(215,198,161,.025); }
     .territory-map { display: block; width: 100%; height: auto; }
+    .map-landmass { fill: #39392f; stroke: rgba(215,198,161,.62); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+    .map-relief { fill: none; stroke: rgba(215,198,161,.22); stroke-width: 1; stroke-dasharray: 2 4; }
+    .map-road { fill: none; stroke: rgba(236,196,119,.72); stroke-width: 1.4; stroke-dasharray: 4 5; }
     .map-water { fill: none; stroke: rgba(110,159,162,.42); stroke-width: 2; stroke-dasharray: 4 5; }
-    .map-river-label { fill: rgba(159,190,183,.8); font: 11px var(--serif); letter-spacing: 2px; }
+    .map-river-label { fill: rgba(159,190,183,.8); font: 11px var(--serif); letter-spacing: 2px; paint-order: stroke; stroke: rgba(23,20,17,.75); stroke-width: 3px; }
+    .map-sea-label { fill: rgba(110,159,162,.78); font: 10px var(--serif); letter-spacing: 2px; }
     .map-region { cursor: pointer; outline: none; }
     .map-region path { stroke: rgba(233,224,202,.65); stroke-width: 1.5; vector-effect: non-scaling-stroke; transition: fill-opacity .18s, stroke .18s, stroke-width .18s; }
     .map-region:hover path, .map-region:focus path { fill-opacity: .92; stroke: #f0dfb8; stroke-width: 2.5; }
@@ -207,6 +211,7 @@
           <svg class="territory-map" viewBox="0 0 760 470" role="group" aria-labelledby="mapTitle mapDescription">
             <title id="mapTitle">前221年前后区域版图示意</title>
             <desc id="mapDescription">可选择秦廷、韩地、赵地、魏地、楚地、燕地、齐地或匈奴查看对应趋势。地形与疆界为示意。</desc>
+            <path class="map-landmass" d="M72 186 L91 164 L113 154 L128 138 L157 141 L174 129 L203 135 L224 128 L247 143 L274 138 L298 147 L322 141 L347 147 L371 136 L397 143 L422 130 L449 137 L472 132 L497 145 L523 143 L541 157 L565 161 L582 178 L598 189 L613 207 L603 223 L609 242 L596 258 L577 264 L568 283 L547 293 L536 314 L516 324 L500 344 L477 351 L462 370 L438 373 L419 386 L393 379 L371 389 L347 376 L322 373 L299 360 L277 369 L254 354 L230 348 L207 356 L187 341 L165 340 L150 326 L132 329 L119 308 L103 293 L94 271 L82 256 L77 233 L65 217 Z" />
             <path d="M58 124 Q152 85 245 105 T438 93 Q532 75 643 126 L621 179 Q539 156 457 177 T286 169 Q174 188 77 165 Z" fill="#a887b5" fill-opacity=".2" stroke="#a887b5" stroke-opacity=".62" stroke-dasharray="7 6" />
             <text x="367" y="113" class="map-river-label">北方边境 · 匈奴活动区域示意</text>
             <path class="map-water" d="M105 202 C195 176 242 219 321 210 S447 166 546 195 S630 224 682 207" />
@@ -245,8 +250,14 @@
               <path d="M83 125 Q168 89 248 112 T409 100 Q508 87 596 126 L575 145 L500 135 L419 150 L334 135 L260 151 L176 143 L103 163 Z" fill="#a887b5" fill-opacity=".2" stroke="#a887b5" stroke-opacity=".75" stroke-dasharray="6 5" />
               <text x="369" y="128" class="small-label">匈奴</text>
             </g>
+            <path class="map-relief" d="M90 263 l10 -9 8 8 9 -14 11 15 9 -8 12 11 10 -13 11 11 12 -5 M103 286 l11 -8 8 9 10 -12 12 12 10 -8 12 9 M467 287 l9 -7 8 8 10 -12 11 11 10 -7 12 8 M466 306 l10 -8 8 8 11 -10 10 11 12 -8 10 10" />
+            <path class="map-road" d="M168 215 C223 207 252 231 277 252 S326 250 345 247 S406 244 440 241" />
+            <path class="map-road" d="M168 215 C180 267 208 293 278 314 S344 333 367 327" />
             <circle class="map-capital" cx="168" cy="215" r="5" />
             <text class="map-capital-label" x="179" y="216">咸阳</text>
+            <text class="map-sea-label" x="630" y="233">东海</text>
+            <text class="map-sea-label" x="566" y="407">南海</text>
+            <text class="map-river-label" x="93" y="178">陇西</text>
             <text class="map-compass" x="710" y="65">北 ↑</text>
           </svg>
           <p class="map-caption">疆界、地形与相对位置为玩法示意；统一后的六国故地已纳入秦郡县治理。</p>
