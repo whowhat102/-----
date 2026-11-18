@@ -17,6 +17,9 @@ bash run.sh
 浏览器打开 <http://127.0.0.1:8000> 即可使用。
 首次启动自动建库并灌入「拾光皮具工作室」完整演示数据，开箱即可对话。
 
+> 仓库不含运行数据库与任何 API Key。`data/chatbot.db` 在首次启动时自动生成，
+> 并被 `.gitignore` 排除；请勿手动提交或分享该文件。
+
 ## 六大功能
 
 | 模块 | 说明 |
@@ -32,13 +35,36 @@ bash run.sh
 
 - **🧪 模拟引擎**（默认）：无需任何 Key，规则匹配知识库 + 话术套用 + 人设风格化改写，跑通全部流程演示。
 - **🤖 真实大模型**：设置页填入任意 OpenAI 兼容接口即可切换——
+  - DeepSeek（推荐）：`https://api.deepseek.com`，模型 `deepseek-flash`（或 `deepseek-v4-pro`）
   - 智谱：`https://open.bigmodel.cn/api/paas/v4`，模型如 `glm-4-flash`
-  - DeepSeek：`https://api.deepseek.com/v1`，模型 `deepseek-chat`
   - OpenAI：`https://api.openai.com/v1`，模型如 `gpt-4o-mini`
   - 本地 Ollama：`http://127.0.0.1:11434/v1`
 
+  > ⚠️ DeepSeek 旧模型名 `deepseek-chat` / `deepseek-reasoner` 已于 **2026-07-24** 停用，
+  > 请改用 `deepseek-flash`（当前为 DeepSeek-V4.1-Flash-1017）。
+
   系统提示词由「人设风格 + 场景策略 + 人群语气 + 检索知识 + 阶段话术 + 纠错示例 + 反机器腔回复铁律」
   动态组装，这是回复拟人度的核心。大模型调用失败时自动降级模拟引擎，对话不中断。
+
+### 接入 DeepSeek（最小步骤）
+
+1. 注册/登录 [DeepSeek 开放平台](https://platform.deepseek.com/api_keys)，在「API keys」页创建 Key 并**立即复制保存**（通常只完整显示一次）；账户需有可用余额（充值或赠送余额均可）。
+2. 二选一提供 Key：
+   - **界面方式**：设置页 → 选「真实大模型」→ 点「一键填入 DeepSeek 官方配置」→ 粘贴 Key → 保存。
+   - **本地 `.env` 文件**（推荐，最省心）：把 `.env.example` 复制为 `.env`，填入真实 Key，
+     启动时自动读取，无需每次敲命令；`.env` 已被 `.gitignore` 排除，不会上传。
+   - **直接设环境变量**（优先级高于 `.env` 和数据库）：
+     ```bash
+     # Windows PowerShell（仅当前会话）
+     $env:DEEPSEEK_API_KEY="sk-你的真实Key"
+     # Git Bash / macOS / Linux
+     export DEEPSEEK_API_KEY="sk-你的真实Key"
+     ```
+     可选变量：`DEEPSEEK_API_BASE_URL`、`DEEPSEEK_MODEL`、`DEEPSEEK_THINKING=enabled`
+     （默认关闭思考模式，使「温度」滑杆生效并降低延迟/费用）。
+   - **界面方式**：设置页 → 选「真实大模型」→ 点「一键填入 DeepSeek 官方配置」→ 粘贴 Key → 保存
+     （该方式会把 Key 写入本机数据库，请勿上传 `data/chatbot.db`）。
+3. 点「测试大模型连接」，返回「连接成功，模型回复：…」即接入完成；随后正常对话即可。
 
 ## 安全边界与合规
 
@@ -71,7 +97,8 @@ server/
 
 ## 注意事项
 
-- API Key 只保存在本机 SQLite（`data/chatbot.db`），不会上传任何第三方；请勿把该文件分享给他人。
+- API Key 默认只保存在本机 SQLite（`data/chatbot.db`）；若用 `DEEPSEEK_API_KEY` 环境变量提供，
+  则完全不落库。服务端不会把 Key 转发给除所填 Base URL 之外的第三方；请勿把数据库文件分享给他人。
 - 本应用为单机单用户设计，未做登录鉴权，请勿直接暴露到公网。
 - 对接微信等真实 IM 平台涉及平台协议限制，建议通过官方合规通道（企业微信客服 API 等）二次开发。
 

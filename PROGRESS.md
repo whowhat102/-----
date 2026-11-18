@@ -66,9 +66,10 @@ python -m uvicorn server.main:app --host 127.0.0.1 --port 8000
 ```
 
 - 首次启动自动建库并灌入「拾光皮具工作室」演示数据；默认**模拟模式**，无需任何 API Key。
-- 真实大模型：设置页填 OpenAI 兼容 Base URL + Key + 模型名 →「测试大模型连接」→ 保存。
+- 真实大模型：设置页填 OpenAI 兼容 Base URL + Key + 模型名 →「测试大模型连接」→ 保存；
+  也可用环境变量 `DEEPSEEK_API_KEY` 等提供配置（优先于数据库且不落库）。
   - 智谱 `https://open.bigmodel.cn/api/paas/v4`（glm-4-flash）·
-    DeepSeek `https://api.deepseek.com/v1`（deepseek-chat）·
+    DeepSeek `https://api.deepseek.com`（**deepseek-flash** / deepseek-v4-pro；旧名 deepseek-chat 已于 2026-07-24 停用）·
     OpenAI `https://api.openai.com/v1` · 本地 Ollama `http://127.0.0.1:11434/v1`
 - 体验建议路径：对话测试发"你好"→ 问价格 →"我想做代理"→"我要投诉"（看转人工）→
   给回复点 👎 写标准答案 → 训练中心看入库 → 再问相似问题看 🎓 徽章。

@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+
+# 本地配置 / 密钥（绝不入库）
+.env
+.env.*
+!.env.example
+*.key
+
+# 运行时数据：SQLite 含 API Key 与会话内容，禁止提交
+data/*.db
+data/*.db-journal
+data/*.sqlite
+data/*.sqlite3
+
+# 虚拟环境 / 编辑器
+.venv/
+venv/
+.idea/
+.vscode/
+.DS_Store

@@ -88,9 +88,9 @@ CREATE TABLE IF NOT EXISTS corrections (
 CREATE TABLE IF NOT EXISTS settings (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     mode TEXT DEFAULT 'mock',                -- mock / llm
-    api_base_url TEXT DEFAULT 'https://api.openai.com/v1',
+    api_base_url TEXT DEFAULT 'https://api.deepseek.com',
     api_key TEXT DEFAULT '',
-    api_model TEXT DEFAULT 'gpt-4o-mini',
+    api_model TEXT DEFAULT 'deepseek-flash',
     api_temperature REAL DEFAULT 0.7,
     disclose_bot INTEGER DEFAULT 0,          -- 合规：是否声明机器人身份
     product_name TEXT DEFAULT '灵犀客服'
@@ -212,7 +212,7 @@ def reseed(conn: sqlite3.Connection) -> None:
     conn.execute(
         "INSERT OR REPLACE INTO settings (id, mode, api_base_url, api_key, api_model,"
         " api_temperature, disclose_bot, product_name)"
-        " VALUES (1, 'mock', 'https://api.openai.com/v1', '', 'gpt-4o-mini',"
+        " VALUES (1, 'mock', 'https://api.deepseek.com', '', 'deepseek-flash',"
         " 0.7, 0, '灵犀客服')"
     )
     conn.execute(

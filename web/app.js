@@ -748,13 +748,16 @@ async function renderSettings() {
 
       <div id="llm-fields" style="display:${s.mode === "llm" ? "" : "none"}">
         <div class="panel" style="padding:16px 18px;margin-bottom:16px">
+          <div class="field"><label>快捷预设</label>
+            <button class="btn" type="button" id="btn-preset-deepseek">一键填入 DeepSeek 官方配置</button>
+            <div class="hint">填入 Base URL 与模型名；Key 可留在下方，或改用环境变量 DEEPSEEK_API_KEY（优先级更高）</div></div>
           <div class="field"><label>API Base URL（OpenAI 兼容地址）</label>
-            <input type="text" id="st-base" value="${esc(s.api_base_url)}" placeholder="如 https://open.bigmodel.cn/api/paas/v4"></div>
+            <input type="text" id="st-base" value="${esc(s.api_base_url)}" placeholder="如 https://api.deepseek.com"></div>
           <div class="field"><label>API Key</label>
             <input type="password" id="st-key" value="${esc(s.api_key)}" placeholder="sk-…">
-            <div class="hint">Key 只保存在本机数据库，不会上传到任何第三方</div></div>
+            <div class="hint">Key 只保存在本机数据库；设置环境变量 DEEPSEEK_API_KEY 后此处可留空</div></div>
           <div class="field"><label>模型名称</label>
-            <input type="text" id="st-model" value="${esc(s.api_model)}" placeholder="如 glm-4-flash / deepseek-chat / gpt-4o-mini"></div>
+            <input type="text" id="st-model" value="${esc(s.api_model)}" placeholder="如 deepseek-flash / deepseek-v4-pro / glm-4-flash"></div>
           <div class="field"><label>温度 <span id="st-temp-v" style="color:var(--brand-dark);font-weight:600">${s.api_temperature}</span>（越高越有个性，越低越稳）</label>
             <input type="range" id="st-temp" min="0" max="1.5" step="0.1" value="${s.api_temperature}"></div>
         </div>
@@ -786,6 +789,11 @@ async function renderSettings() {
     $("#llm-fields").style.display = mode === "llm" ? "" : "none";
   });
   $("#st-temp").oninput = e => $("#st-temp-v").textContent = e.target.value;
+  $("#btn-preset-deepseek").onclick = () => {
+    $("#st-base").value = "https://api.deepseek.com";
+    $("#st-model").value = "deepseek-flash";
+    toast("已填入 DeepSeek 官方参数，请填写 Key 或设置环境变量", "ok");
+  };
 
   const collect = () => ({
     mode, api_base_url: $("#st-base")?.value.trim() || s.api_base_url,

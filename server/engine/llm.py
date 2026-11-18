@@ -1,24 +1,82 @@
-"""OpenAI 兼容大模型客户端（智谱 / DeepSeek / OpenAI / 本地 Ollama 等通用）。"""
-import httpx
+"""OpenAI 兼容大模型客户端（DeepSeek / 智谱 / OpenAI / 本地 Ollama 等通用）。"""
+import os
 import sqlite3
+from pathlib import Path
+from urllib.parse import urlparse
+
+import httpx
+
+
+def _load_dotenv() -> None:
+    """轻量读取项目根目录 .env（无第三方依赖），不覆盖已有环境变量。"""
+    path = Path(__file__).resolve().parents[2] / ".env"
+    if not path.is_file():
+        return
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key, value = key.strip(), value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+    except OSError:
+        pass
+
+
+_load_dotenv()
 
 
 class LLMError(Exception):
     """大模型调用失败，携带可直接展示给用户的原因。"""
 
 
+# 环境变量优先于数据库保存的设置（仅当环境变量非空时覆盖）。
+# 这样 API Key 可以只放在本机环境变量里，不写入 data/chatbot.db。
+ENV_OVERRIDES = {
+    "api_base_url": "DEEPSEEK_API_BASE_URL",
+    "api_key": "DEEPSEEK_API_KEY",
+    "api_model": "DEEPSEEK_MODEL",
+}
+
+
+def _value(settings, field: str) -> str:
+    env_value = os.environ.get(ENV_OVERRIDES[field], "").strip()
+    if env_value:
+        return env_value
+    try:
+        return (settings[field] or "").strip()
+    except (KeyError, IndexError, TypeError):
+        return ""
+
+
+def _is_deepseek(url: str) -> bool:
+    return "deepseek.com" in urlparse(url).netloc.lower()
+
+
 async def chat_completion(settings: sqlite3.Row, system_prompt: str,
                           messages: list, timeout: float = 60.0) -> str:
-    if not settings["api_key"]:
-        raise LLMError("未配置 API Key，请到「设置」填写后再使用真实大模型模式")
+    api_key = _value(settings, "api_key")
+    if not api_key:
+        raise LLMError("未配置 API Key，请到「设置」填写或设置环境变量 DEEPSEEK_API_KEY")
 
-    url = settings["api_base_url"].rstrip("/") + "/chat/completions"
+    base_url = _value(settings, "api_base_url") or "https://api.deepseek.com"
+    model = _value(settings, "api_model") or "deepseek-flash"
+    url = base_url.rstrip("/") + "/chat/completions"
     payload = {
-        "model": settings["api_model"],
+        "model": model,
         "messages": [{"role": "system", "content": system_prompt}] + messages,
         "temperature": settings["api_temperature"],
     }
-    headers = {"Authorization": f"Bearer {settings['api_key']}"}
+    # DeepSeek V4 默认开启思考模式且此时忽略 temperature；客服场景默认关闭，
+    # 让设置页的「温度」滑杆生效，同时降低延迟与 token 费用。
+    # 如需开启思考模式：设置 DEEPSEEK_THINKING=enabled。
+    if _is_deepseek(url):
+        thinking = os.environ.get("DEEPSEEK_THINKING", "disabled").strip().lower()
+        payload["thinking"] = {"type": "enabled" if thinking == "enabled" else "disabled"}
+
+    headers = {"Authorization": f"Bearer {api_key}"}
 
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
@@ -33,6 +91,7 @@ async def chat_completion(settings: sqlite3.Row, system_prompt: str,
             detail = resp.json().get("error", {}).get("message", "") or resp.text[:200]
         except Exception:
             detail = resp.text[:200]
+        # 不回显 Key；只透传服务端错误文案（DeepSeek 会把具体原因放在 message 中）。
         raise LLMError(f"接口返回 {resp.status_code}：{detail}")
 
     try:
