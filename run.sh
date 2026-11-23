@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 灵犀客服一键启动（Linux / macOS / Git Bash）
+# 小熙客服一键启动（Linux / macOS / Git Bash）
 cd "$(dirname "$0")"
 python -m pip install -r requirements.txt -q
 echo "启动中，浏览器打开: http://127.0.0.1:8000"

@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS knowledge (
     title TEXT NOT NULL,
     content TEXT NOT NULL,
     tags TEXT DEFAULT '[]',
+    category TEXT DEFAULT '未分组',
     created_at TEXT DEFAULT (datetime('now','localtime'))
 );
 
@@ -93,7 +94,7 @@ CREATE TABLE IF NOT EXISTS settings (
     api_model TEXT DEFAULT 'deepseek-flash',
     api_temperature REAL DEFAULT 0.7,
     disclose_bot INTEGER DEFAULT 0,          -- 合规：是否声明机器人身份
-    product_name TEXT DEFAULT '灵犀客服'
+    product_name TEXT DEFAULT '小熙客服'
 );
 """
 
@@ -193,6 +194,10 @@ def init_db() -> None:
     conn = get_conn()
     try:
         conn.executescript(SCHEMA)
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(knowledge)")}
+        if "category" not in columns:
+            conn.execute("ALTER TABLE knowledge ADD COLUMN category TEXT DEFAULT '未分组'")
+            conn.commit()
         if conn.execute("SELECT 1 FROM settings LIMIT 1").fetchone() is None:
             reseed(conn)
     finally:
@@ -213,7 +218,7 @@ def reseed(conn: sqlite3.Connection) -> None:
         "INSERT OR REPLACE INTO settings (id, mode, api_base_url, api_key, api_model,"
         " api_temperature, disclose_bot, product_name)"
         " VALUES (1, 'mock', 'https://api.deepseek.com', '', 'deepseek-flash',"
-        " 0.7, 0, '灵犀客服')"
+        " 0.7, 0, '小熙客服')"
     )
     conn.execute(
         "INSERT INTO personas (name, identity, greeting, catchphrases,"

@@ -70,7 +70,8 @@ def retrieve_knowledge(conn: sqlite3.Connection, query: str, k: int = 3,
     hits = []
     for row in conn.execute("SELECT * FROM knowledge"):
         tags = " ".join(_parse_json(row["tags"]))
-        head_target = f"{row['title']} {tags}"
+        category = row["category"] if "category" in row.keys() else ""
+        head_target = f"{row['title']} {tags} {category}"
         head = similarity(query, head_target)
         body = similarity(query, row["content"])
         topic = max(topic_similarity(query, head_target),

@@ -20,6 +20,7 @@ class KnowledgeIn(BaseModel):
     title: str = Field(min_length=1)
     content: str = Field(min_length=1)
     tags: List[str] = []
+    category: str = "未分组"
 
 
 class KnowledgeImportIn(BaseModel):
@@ -77,4 +78,4 @@ class SettingsIn(BaseModel):
     api_model: str = "gpt-4o-mini"
     api_temperature: float = Field(default=0.7, ge=0, le=2)
     disclose_bot: int = 0
-    product_name: str = "灵犀客服"
+    product_name: str = "小熙客服"

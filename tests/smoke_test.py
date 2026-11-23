@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""灵犀客服 API 冒烟测试：覆盖六大模块核心链路。"""
+"""小熙客服 API 冒烟测试：覆盖六大模块核心链路。"""
 import io
 import json
 import sys
@@ -101,11 +101,11 @@ check("清理测试数据", True)
 print("== 设置 ==")
 st = call("GET", "/api/settings")
 check("默认模拟模式", st["mode"] == "mock")
-t = call("POST", "/api/settings/test", {"mode": "llm", "api_base_url": "https://api.openai.com/v1", "api_key": "", "api_model": "gpt-4o-mini", "api_temperature": 0.7, "disclose_bot": 0, "product_name": "灵犀客服"})
+t = call("POST", "/api/settings/test", {"mode": "llm", "api_base_url": "https://api.openai.com/v1", "api_key": "", "api_model": "gpt-4o-mini", "api_temperature": 0.7, "disclose_bot": 0, "product_name": "小熙客服"})
 check("空Key测试连接→友好报错", t["ok"] is False and "Key" in t["message"], t["message"][:30])
-st2 = call("PUT", "/api/settings", {"mode": "mock", "api_base_url": "https://api.openai.com/v1", "api_key": "", "api_model": "gpt-4o-mini", "api_temperature": 0.7, "disclose_bot": 1, "product_name": "灵犀客服"})
+st2 = call("PUT", "/api/settings", {"mode": "mock", "api_base_url": "https://api.openai.com/v1", "api_key": "", "api_model": "gpt-4o-mini", "api_temperature": 0.7, "disclose_bot": 1, "product_name": "小熙客服"})
 check("合规开关可保存", st2["disclose_bot"] == 1)
-call("PUT", "/api/settings", {"mode": "mock", "api_base_url": "https://api.openai.com/v1", "api_key": "", "api_model": "gpt-4o-mini", "api_temperature": 0.7, "disclose_bot": 0, "product_name": "灵犀客服"})
+call("PUT", "/api/settings", {"mode": "mock", "api_base_url": "https://api.openai.com/v1", "api_key": "", "api_model": "gpt-4o-mini", "api_temperature": 0.7, "disclose_bot": 0, "product_name": "小熙客服"})
 
 print(f"\n结果：{passed} 通过 / {failed} 失败")
 exit(1 if failed else 0)

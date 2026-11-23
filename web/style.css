@@ -1,4 +1,4 @@
-/* ============ 灵犀客服 · 全局样式 ============ */
+/* ============ 小熙客服 · 全局样式 ============ */
 :root {
   --bg: #f2f5f8;
   --panel: #ffffff;
@@ -39,10 +39,6 @@ body {
   display: flex; flex-direction: column;
   padding: 18px 12px;
 }
-.logo { display: flex; gap: 10px; align-items: center; padding: 4px 8px 18px; }
-.logo-mark { font-size: 26px; }
-.logo-text b { color: #fff; font-size: 16px; display: block; }
-.logo-text span { font-size: 11px; color: #7c8aa0; }
 
 #nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .nav-btn {

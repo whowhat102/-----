@@ -3,6 +3,7 @@ import os
 import sqlite3
 from pathlib import Path
 from urllib.parse import urlparse
+import json
 
 import httpx
 
@@ -107,3 +108,60 @@ async def test_connection(settings: sqlite3.Row) -> str:
         [{"role": "user", "content": "请回复：连接成功"}],
         timeout=15,
     )
+
+
+async def chat_completion_stream(settings: sqlite3.Row, system_prompt: str,
+                                 messages: list, timeout: float = 60.0):
+    """流式调用 OpenAI 兼容接口，逐段产生文本。失败时抛出 LLMError。"""
+    api_key = _value(settings, "api_key")
+    if not api_key:
+        raise LLMError("未配置 API Key，请到「设置」填写或设置环境变量 DEEPSEEK_API_KEY")
+
+    base_url = _value(settings, "api_base_url") or "https://api.deepseek.com"
+    model = _value(settings, "api_model") or "deepseek-flash"
+    url = base_url.rstrip("/") + "/chat/completions"
+    payload = {
+        "model": model,
+        "messages": [{"role": "system", "content": system_prompt}] + messages,
+        "temperature": settings["api_temperature"],
+        "stream": True,
+    }
+    if _is_deepseek(url):
+        thinking = os.environ.get("DEEPSEEK_THINKING", "disabled").strip().lower()
+        payload["thinking"] = {"type": "enabled" if thinking == "enabled" else "disabled"}
+
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            async with client.stream(
+                "POST", url,
+                json=payload,
+                headers={"Authorization": f"Bearer {api_key}"},
+            ) as resp:
+                if resp.status_code != 200:
+                    data = await resp.aread()
+                    try:
+                        detail = json.loads(data).get("error", {}).get("message", "") or data.decode("utf-8", "replace")[:200]
+                    except Exception:
+                        detail = data.decode("utf-8", "replace")[:200]
+                    raise LLMError(f"接口返回 {resp.status_code}：{detail}")
+
+                async for line in resp.aiter_lines():
+                    line = line.strip()
+                    if not line or not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data)
+                        content = chunk["choices"][0].get("delta", {}).get("content", "")
+                    except Exception:
+                        continue
+                    if content:
+                        yield content
+    except LLMError:
+        raise
+    except httpx.TimeoutException:
+        raise LLMError("大模型请求超时，请稍后重试或检查网络")
+    except httpx.HTTPError as exc:
+        raise LLMError(f"网络错误：{exc}")

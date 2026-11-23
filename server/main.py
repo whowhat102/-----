@@ -1,4 +1,4 @@
-"""灵犀客服 · FastAPI 入口：建表、挂路由、托管前端静态文件。"""
+"""小熙客服 · FastAPI 入口：建表、挂路由、托管前端静态文件。"""
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -18,12 +18,12 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="灵犀客服", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="小熙客服", version="0.1.0", lifespan=lifespan)
 
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "product": "灵犀客服", "version": "0.1.0"}
+    return {"ok": True, "product": "小熙客服", "version": "0.1.0"}
 
 
 @app.post("/api/dev/reset")

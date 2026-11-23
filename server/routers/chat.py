@@ -2,12 +2,13 @@
 import json
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel
 import sqlite3
 
 from ..db import get_db, get_settings
 from ..schemas import ChatRequest, FeedbackRequest, SessionCreate, SessionUpdate
-from ..engine.llm import LLMError, chat_completion
+from ..engine.llm import LLMError, chat_completion, chat_completion_stream
 from ..engine.mock import mock_reply
 from ..engine.prompt import build_system_prompt
 
@@ -183,6 +184,77 @@ async def chat(req: ChatRequest, conn=Depends(get_db)):
             "error": error}
 
 
+@router.post("/api/chat/stream")
+async def chat_stream(req: ChatRequest, conn=Depends(get_db)):
+    """使用 SSE 流式返回客服回复，并在结束时持久化完整消息。"""
+    session = conn.execute("SELECT * FROM sessions WHERE id=?", (req.session_id,)).fetchone()
+    if session is None:
+        raise HTTPException(404, "会话不存在")
+
+    persona = conn.execute("SELECT * FROM personas WHERE id=?", (session["persona_id"],)).fetchone() if session["persona_id"] else None
+    scenario = conn.execute("SELECT * FROM scenarios WHERE id=?", (session["scenario_id"],)).fetchone() if session["scenario_id"] else None
+    audience = conn.execute("SELECT * FROM audiences WHERE id=?", (session["audience_id"],)).fetchone() if session["audience_id"] else None
+    settings = get_settings(conn)
+
+    conn.execute("INSERT INTO messages (session_id, role, content) VALUES (?,?,?)",
+                 (req.session_id, "user", req.message))
+    conn.commit()
+    history = [{"role": "assistant" if m["role"] == "bot" else "user", "content": m["content"]}
+               for m in conn.execute("SELECT * FROM messages WHERE session_id=? ORDER BY id DESC LIMIT 12", (req.session_id,)).fetchall()][::-1]
+    bot_count = conn.execute("SELECT COUNT(*) AS c FROM messages WHERE session_id=? AND role='bot'", (req.session_id,)).fetchone()["c"]
+
+    async def generate():
+        full = ""
+        engine = "mock"
+        matched = []
+        used_correction = False
+        error = None
+        chunks = []
+
+        if settings["mode"] == "llm":
+            built = build_system_prompt(conn, persona, scenario, audience, req.message, bot_count, bool(settings["disclose_bot"]))
+            matched = [h["title"] for h in built["hits"]]
+            used_correction = bool(built["corrections"])
+            meta_event = {"engine": "llm", "knowledge": matched, "used_correction": used_correction}
+            yield "event: meta\ndata: " + json.dumps(meta_event, ensure_ascii=False) + "\n\n"
+            try:
+                engine = "llm"
+                async for chunk in chat_completion_stream(settings, built["prompt"], history):
+                    full += chunk
+                    yield "event: delta\ndata: " + json.dumps({"text": chunk}, ensure_ascii=False) + "\n\n"
+            except LLMError as exc:
+                error = str(exc)
+                engine = "mock(fallback)"
+                reply, matched, _, used_correction = mock_reply(conn, persona, scenario, bot_count, req.message, bool(settings["disclose_bot"]))
+                for chunk in [reply[i:i + 8] for i in range(0, len(reply), 8)]:
+                    full += chunk
+                    yield "event: delta\ndata: " + json.dumps({"text": chunk}, ensure_ascii=False) + "\n\n"
+        else:
+            reply, matched, _, used_correction = mock_reply(conn, persona, scenario, bot_count, req.message, bool(settings["disclose_bot"]))
+            chunks = [reply[i:i + 8] for i in range(0, len(reply), 8)]
+            meta_event = {"engine": engine, "knowledge": matched, "used_correction": used_correction}
+            yield "event: meta\ndata: " + json.dumps(meta_event, ensure_ascii=False) + "\n\n"
+            for chunk in chunks:
+                full += chunk
+                yield "event: delta\ndata: " + json.dumps({"text": chunk}, ensure_ascii=False) + "\n\n"
+
+        meta_event = {"engine": engine, "knowledge": matched, "used_correction": used_correction}
+        if error:
+            meta_event["error"] = error
+        needs_human = HUMAN_MARKER in full
+        reply_text = full.replace(HUMAN_MARKER, "").strip()
+        conn.execute("INSERT INTO messages (session_id, role, content, meta) VALUES (?,?,?,?)",
+                     (req.session_id, "bot", reply_text, json.dumps(meta_event, ensure_ascii=False)))
+        if needs_human:
+            conn.execute("UPDATE sessions SET needs_human=1 WHERE id=?", (req.session_id,))
+        conn.execute("UPDATE sessions SET updated_at=datetime('now','localtime') WHERE id=?", (req.session_id,))
+        conn.commit()
+        yield "event: done\ndata: " + json.dumps({"needs_human": bool(session["needs_human"] or needs_human)}, ensure_ascii=False) + "\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
 # ---------------------------------------------------------------- 评分与纠错
 @router.post("/api/feedback")
 def feedback(req: FeedbackRequest, conn=Depends(get_db)):
@@ -236,3 +308,18 @@ def delete_correction(cid: int, conn=Depends(get_db)):
     if cur.rowcount == 0:
         raise HTTPException(404, "纠错记录不存在")
     return {"ok": True}
+
+
+@router.get("/api/sessions/{sid}/export")
+def export_session(sid: int, conn=Depends(get_db)):
+    """导出会话为 UTF-8 文本，便于人工复盘。"""
+    session = conn.execute("SELECT * FROM sessions WHERE id=?", (sid,)).fetchone()
+    if session is None:
+        raise HTTPException(404, "会话不存在")
+    rows = conn.execute("SELECT * FROM messages WHERE session_id=? ORDER BY id", (sid,)).fetchall()
+    lines = ["小熙客服 · " + session["title"], "导出时间：" + session["updated_at"], ""]
+    for row in rows:
+        role = "来访者" if row["role"] == "user" else "客服"
+        lines.append(f"[{role} {row['created_at']}] {row['content']}")
+    return Response(("\n".join(lines)).encode("utf-8-sig"), media_type="text/plain; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="xiaoxi-session-{sid}.txt"'})

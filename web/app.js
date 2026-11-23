@@ -1,4 +1,4 @@
-/* 灵犀客服 · 前端单页应用 */
+/* 小熙客服 · 前端单页应用 */
 "use strict";
 
 /* ---------------- 工具 ---------------- */
@@ -78,7 +78,7 @@ function updateFoot() {
   if (!el) return;
   if (s && s.mode === "llm") { el.textContent = "真实大模型"; el.className = "chip chip-ghost"; }
   else { el.textContent = "模拟模式"; el.className = "chip chip-ghost"; }
-  if (s) $("#product-name").textContent = s.product_name || "灵犀客服";
+  if (s) $("#product-name").textContent = s.product_name || "小熙客服";
 }
 
 const views = {
@@ -126,6 +126,7 @@ async function renderChat() {
         <div class="head-badges">
           <span id="badge-engine" class="chip chip-gray">模拟模式</span>
           <span id="badge-human" class="chip chip-warn" style="display:none">⚠ 需转人工</span>
+          <button class="btn btn-sm" id="btn-export-session" title="导出当前会话">导出</button>
         </div>
       </div>
       <div id="chat-msgs"></div>
@@ -333,28 +334,63 @@ async function sendMessage() {
   $("#btn-send").disabled = true;
 
   const msgsBox = $("#chat-msgs");
-  const empty = msgsBox.querySelector(".chat-empty");
-  if (empty) empty.remove();
+  msgsBox.querySelector(".chat-empty")?.remove();
   const userEl = document.createElement("div");
   userEl.className = "msg user";
   userEl.innerHTML = `<div class="bubble">${esc(text)}</div>`;
   msgsBox.appendChild(userEl);
+
   const typingEl = document.createElement("div");
   typingEl.className = "msg bot";
-  typingEl.innerHTML = `<div class="bubble"><span class="typing-dots"><i></i><i></i><i></i></span></div>`;
+  typingEl.innerHTML = `<div class="bubble"><span class="stream-text"></span><span class="typing-dots"><i></i><i></i><i></i></span></div>`;
   msgsBox.appendChild(typingEl);
   msgsBox.scrollTop = msgsBox.scrollHeight;
   box.value = "";
 
+  let meta = null;
+  let replyText = "";
   try {
-    const res = await api.post("/api/chat",
-      {session_id: state.curSession.id, message: text});
+    const response = await fetch("/api/chat/stream", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({session_id: state.curSession.id, message: text}),
+    });
+    if (!response.ok) throw new Error(`请求失败（${response.status}）`);
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream: true});
+      const packets = buffer.split("\n\n");
+      buffer = packets.pop() || "";
+      for (const packet of packets) {
+        const eventLine = packet.split("\n").find(line => line.startsWith("event:"));
+        const dataLine = packet.split("\n").find(line => line.startsWith("data:"));
+        if (!eventLine || !dataLine) continue;
+        const event = eventLine.slice(6).trim();
+        const data = JSON.parse(dataLine.slice(5).trim());
+        if (event === "meta") meta = data;
+        if (event === "delta") {
+          replyText += data.text;
+          typingEl.querySelector(".stream-text").textContent = replyText;
+          msgsBox.scrollTop = msgsBox.scrollHeight;
+        }
+        if (event === "done") {
+          typingEl.querySelector(".typing-dots")?.remove();
+          if (meta?.error) toast(`大模型调用失败已降级：${meta.error}`, "err");
+          if (data.needs_human) $("#badge-human").style.display = "";
+        }
+      }
+    }
+
     await reloadMessages();
     state.sessions = await api.get("/api/sessions");
     state.curSession = state.sessions.find(s => s.id === state.curSession.id) || state.curSession;
     renderSessionList();
     syncHeaderSelects();
-    if (res.error) toast(`大模型调用失败已降级：${res.error}`, "err");
   } catch (e) {
     toast(e.message, "err");
     typingEl.remove();
@@ -365,26 +401,36 @@ async function sendMessage() {
   }
 }
 
+function exportCurrentSession() {
+  if (!state.curSession) { toast("请先选择会话", "err"); return; }
+  window.location.href = `/api/sessions/${state.curSession.id}/export`;
+}
+
 /* ================================================================
  * 📚 知识库
  * ================================================================ */
 async function renderKnowledge() {
-  const list = await api.get("/api/knowledge");
+  const [list, categories] = await Promise.all([
+    api.get("/api/knowledge"),
+    api.get("/api/knowledge/categories"),
+  ]);
   $("#main").innerHTML = `
   <div class="page">
     <div class="page-head">
       <h2>📚 知识库</h2><span class="sub">共 ${list.length} 条 · 机器人只依据这里的知识回答产品问题</span>
       <span class="spacer"></span>
+      <select id="kb-category" style="width:130px"><option value="">全部分组</option>${categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("")}</select>
       <input type="text" id="kb-search" placeholder="搜索标题 / 内容 / 标签…" style="width:220px">
       <button class="btn" id="btn-kb-import">批量导入</button>
       <button class="btn btn-primary" id="btn-kb-add">＋ 新增知识</button>
     </div>
     <div class="page-body">
       <div class="panel"><table class="tbl">
-        <thead><tr><th style="width:160px">标题</th><th style="width:150px">标签</th><th>内容</th><th style="width:110px">操作</th></tr></thead>
+        <thead><tr><th style="width:140px">分组</th><th style="width:160px">标题</th><th style="width:150px">标签</th><th>内容</th><th style="width:110px">操作</th></tr></thead>
         <tbody id="kb-body">
         ${list.map(k => `
-          <tr>
+          <tr data-category="${esc(k.category || "未分组")}">
+            <td><span class="chip chip-gray">${esc(k.category || "未分组")}</span></td>
             <td><b>${esc(k.title)}</b></td>
             <td>${k.tags.map(t => `<span class="chip chip-gray">${esc(t)}</span>`).join(" ")}</td>
             <td style="max-width:420px;color:#556">${esc(k.content.length > 96 ? k.content.slice(0, 96) + "…" : k.content)}</td>
@@ -392,37 +438,43 @@ async function renderKnowledge() {
               <button class="btn btn-sm" data-act="edit" data-id="${k.id}">编辑</button>
               <button class="btn btn-sm btn-danger-ghost" data-act="del" data-id="${k.id}">删除</button>
             </td>
-          </tr>`).join("") || '<tr><td colspan="4" style="color:var(--muted)">暂无知识，点右上角新增</td></tr>'}
+          </tr>`).join("") || '<tr><td colspan="5" style="color:var(--muted)">暂无知识，点右上角新增</td></tr>'}
         </tbody>
       </table></div>
     </div>
   </div>`;
 
-  $("#kb-search").oninput = e => {
-    const q = e.target.value.trim().toLowerCase();
+  const applyFilters = () => {
+    const q = $("#kb-search").value.trim().toLowerCase();
+    const category = $("#kb-category").value;
     $$("#kb-body tr").forEach(tr => {
-      tr.style.display = !q || tr.textContent.toLowerCase().includes(q) ? "" : "none";
+      const textMatch = !q || tr.textContent.toLowerCase().includes(q);
+      const categoryMatch = !category || tr.dataset.category === category;
+      tr.style.display = textMatch && categoryMatch ? "" : "none";
     });
   };
-  $("#btn-kb-add").onclick = () => knowledgeForm();
+  $("#kb-search").oninput = applyFilters;
+  $("#kb-category").onchange = applyFilters;
+  $("#btn-kb-add").onclick = () => knowledgeForm(null, categories);
   $("#btn-kb-import").onclick = knowledgeImportForm;
   $$("#kb-body [data-act]").forEach(btn => {
     const item = list.find(k => k.id === +btn.dataset.id);
     btn.onclick = () => btn.dataset.act === "edit"
-      ? knowledgeForm(item)
-      : confirm(`删除知识「${item.title}」？`) &&
-        api.del(`/api/knowledge/${item.id}`).then(showView.bind(null, "knowledge"));
+      ? knowledgeForm(item, categories)
+      : confirm(`删除知识「${item.title}」？`) && api.del(`/api/knowledge/${item.id}`).then(showView.bind(null, "knowledge"));
   });
 }
 
-function knowledgeForm(item) {
+function knowledgeForm(item, categories) {
   const body = openModal(item ? "编辑知识" : "新增知识", `
+    <div class="field"><label>分组</label><input type="text" id="kf-category" list="kf-category-list" value="${esc(item?.category || "未分组")}"><datalist id="kf-category-list">${categories.map(c => `<option value="${esc(c)}"></option>`).join("")}</datalist></div>
     <div class="field"><label>标题</label><input type="text" id="kf-title" value="${esc(item?.title || "")}"></div>
     <div class="field"><label>内容</label><textarea id="kf-content" style="min-height:110px">${esc(item?.content || "")}</textarea></div>
     <div class="field"><label>标签（逗号分隔，如：价格,产品）</label><input type="text" id="kf-tags" value="${esc((item?.tags || []).join(","))}"></div>
     <div class="m-actions"><button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" id="kf-save">保存</button></div>`);
   body.querySelector("#kf-save").onclick = async () => {
     const payload = {
+      category: body.querySelector("#kf-category").value.trim() || "未分组",
       title: body.querySelector("#kf-title").value.trim(),
       content: body.querySelector("#kf-content").value.trim(),
       tags: body.querySelector("#kf-tags").value.split(/[,，]/).map(s => s.trim()).filter(Boolean),
@@ -431,19 +483,6 @@ function knowledgeForm(item) {
     item ? await api.put(`/api/knowledge/${item.id}`, payload)
          : await api.post("/api/knowledge", payload);
     closeModal(); toast("已保存", "ok"); showView("knowledge");
-  };
-}
-
-function knowledgeImportForm() {
-  const body = openModal("批量导入知识", `
-    <div class="field"><label>每行一条，格式：<code>标题 | 内容 | 标签(逗号分隔，可选)</code></label>
-    <textarea id="ki-text" style="min-height:180px;font-size:12px" placeholder="免费刻字 | 全部产品支持免费刻字，图案定制加 50-100 | 定制,价格&#10;发货时间 | 现货 48 小时内顺丰包邮 | 物流"></textarea></div>
-    <div class="m-actions"><button class="btn" onclick="closeModal()">取消</button><button class="btn btn-primary" id="ki-go">导入</button></div>`);
-  body.querySelector("#ki-go").onclick = async () => {
-    const res = await api.post("/api/knowledge/import", {text: body.querySelector("#ki-text").value});
-    closeModal();
-    toast(`导入成功 ${res.imported} 条${res.failed ? `，失败 ${res.failed} 条` : ""}`, res.failed ? "err" : "ok");
-    showView("knowledge");
   };
 }
 
@@ -677,9 +716,8 @@ function targetForm(kind, item) {
   };
 }
 
-/* ================================================================
- * 🛠️ 训练中心
- * ================================================================ */
+/* 🛠️ 训练中心
+================================================ */
 async function renderTraining() {
   const list = await api.get("/api/corrections");
   const active = list.filter(c => c.active).length;
@@ -801,7 +839,7 @@ async function renderSettings() {
     api_model: $("#st-model")?.value.trim() || s.api_model,
     api_temperature: +($("#st-temp")?.value ?? s.api_temperature),
     disclose_bot: $("#st-disclose").checked ? 1 : 0,
-    product_name: $("#st-product").value.trim() || "灵犀客服",
+    product_name: $("#st-product").value.trim() || "小熙客服",
   });
 
   $("#btn-save-settings").onclick = async () => {
